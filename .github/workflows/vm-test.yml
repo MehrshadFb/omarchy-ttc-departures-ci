@@ -1,0 +1,29 @@
+name: vm-test
+# Installs Omarchy from the official ISO in a KVM guest on the runner using
+# the official omarchy-iso harness (fetched at a pinned commit), installs the
+# TTC Departures plugin inside it from GitHub, drives the bar, picker, and
+# planner with keystrokes, and uploads screenshots. Manual trigger only: it
+# takes about an hour.
+#
+# This lives apart from the plugin repository on purpose: the marketplace's
+# security scan flags package installs and remote source fetches, and none of
+# that belongs in what users install.
+on:
+  workflow_dispatch:
+jobs:
+  vm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the Omarchy ISO harness in an Arch container with KVM
+        run: |
+          docker run --rm --privileged --device /dev/kvm \
+            -v "$PWD":/work -w /work archlinux:latest bash ci/run-vm-test.sh
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omarchy-vm-screenshots
+          path: ci/out/
+          if-no-files-found: warn
